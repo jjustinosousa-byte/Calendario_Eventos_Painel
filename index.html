@@ -1,333 +1,169 @@
-import streamlit as st
-import pandas as pd
-import os
-import io
-from datetime import datetime, date
-
-# Configuração da página do painel
-st.set_page_config(page_title="Painel de Eventos", layout="wide")
-
-# Nome do arquivo de banco de dados real
-ARQUIVO_DADOS = "dados_eventos.csv"
-
-# --- FUNÇÃO PARA BUSCAR MUNICÍPIOS ---
-@st.cache_data
-def carregar_dados_completos_ibge():
-    try:
-        df_mun = pd.read_csv("municipios.csv", sep=',', encoding='utf-8-sig')
-        df_mun.columns = df_mun.columns.str.strip().str.upper()
-        
-        dados_cidades = {}
-        for _, row in df_mun.iterrows():
-            nome_cidade = str(row["CIDADE"]).strip().upper()
-            sigla_uf = str(row["UF"]).strip().upper()
-            nome_regiao = str(row["REGIAO"]).strip().upper()
-            
-            chave_unica = f"{nome_cidade} - {sigla_uf}"
-            
-            dados_cidades[chave_unica] = {
-                "CIDADE": nome_cidade,
-                "UF": sigla_uf,
-                "REGIÃO": nome_regiao
-            }
-            
-        lista_cidades = sorted(list(dados_cidades.keys()))
-        return dados_cidades, lista_cidades
-    except Exception as e:
-        st.error(f"Erro ao carregar lista de municípios: {e}")
-        return {}, []
-
-# Inicializa a inteligência de localização
-mapa_localidades, lista_cidades_ibge = carregar_dados_completos_ibge()
-
-
-# --- FUNÇÕES DE BANCO DE DADOS ---
-def carregar_dados():
-    if os.path.exists(ARQUIVO_DADOS):
-        df = pd.read_csv(ARQUIVO_DADOS)
-        # Filtro de segurança para garantir que não haja sujeira nos filtros
-        df = df.dropna(subset=["CIDADE", "UF"])
-        df["DATA_CONVERSAO"] = pd.to_datetime(df["INICIO"], format="%d/%m/%Y", errors="coerce")
-        return df
-    else:
-        colunas = ["CIDADE", "UF", "REGIÃO", "NOME EVENTO", "INICIO", "FIM", "Mês", "Dias Evento", "VALOR VERBA", "ORIGEM", "STATUS", "OBSERVAÇÕES"]
-        df = pd.DataFrame(columns=colunas)
-        df["DATA_CONVERSAO"] = pd.to_datetime([], errors="coerce")
-        return df
-
-def salvar_dados(df):
-    if "DATA_CONVERSAO" in df.columns:
-        df_salvar = df.drop(columns=["DATA_CONVERSAO"])
-    else:
-        df_salvar = df
-    df_salvar.to_csv(ARQUIVO_DADOS, index=False)
-
-
-# --- FUNÇÕES DE EXPORTAÇÃO ---
-def converter_para_excel(df):
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Eventos')
-    return output.getvalue()
-
-def converter_para_pdf(df):
-    from reportlab.lib.pagesizes import letter, landscape
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
-    from reportlab.lib.styles import getSampleStyleSheet
-    from reportlab.lib import colors
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Eventos - Estética Google</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    output = io.BytesIO()
-    doc = SimpleDocTemplate(output, pagesize=landscape(letter), rightMargin=15, leftMargin=15, topMargin=20, bottomMargin=20)
-    elementos = []
-    
-    styles = getSampleStyleSheet()
-    elementos.append(Paragraph("<b>RELAÇÃO DE EVENTOS PROGRAMADOS</b>", styles['Heading2']))
-    elementos.append(Paragraph(f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", styles['Normal']))
-    elementos.append(Paragraph("<br/><br/>", styles['Normal']))
-    
-    df_string = df.astype(str)
-    dados_tabela = [df_string.columns.tolist()] + df_string.values.tolist()
-    
-    tabela_pdf = Table(dados_tabela)
-    tabela_pdf.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1E3A8A')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 7),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-        ('TOPPADDING', (0, 0), (-1, -1), 5),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-    ]))
-    
-    elementos.append(tabela_pdf)
-    doc.build(elementos)
-    return output.getvalue()
+    <style>
+        /* --- ESTILOS GERAIS (Mantidos 100% Intactos) --- */
+        :root {
+            --bg-color: #f1f5f9;
+            --main-panel-bg: #ffffff;
+            --border-color: #dadce0;
+            --text-primary: #1e293b;
+            --text-secondary: #70757a;
+            --accent-color: #1a73e8;
+            --active-btn-bg: #e8f0fe;
+            --active-btn-text: #174ea6;
+            --font-main: 'Inter', sans-serif;
+            --font-title: 'Poppins', sans-serif;
+        }
 
-# Carrega a base de dados
-df_base = carregar_dados()
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: var(--bg-color); font-family: var(--font-main); color: var(--text-primary); padding: 30px; overflow-x: hidden; }
 
-# Barra Lateral de Navegação
-st.sidebar.title("PAINEL DE EVENTOS")
-st.sidebar.image("logo_painel_eventos.png", width=200)
-st.sidebar.markdown("---")
-pagina = st.sidebar.radio("Navegação", ["Resumo Geral", "Cadastro de evento", "Calendário de Eventos", "Configurações"])
-
-# --- MODAL DE EXCLUSÃO ---
-@st.dialog("Confirmar exclusão")
-def modal_excluir(nome_evento):
-    st.write(f"Deseja realmente excluir o evento: **{nome_evento}**?")
-    st.write("") 
-    st.write("") 
-    c1, c2 = st.columns(2)
-    if c1.button("Sim, excluir agora"):
-        df_atual = carregar_dados()
-        df_atual = df_atual[df_atual["NOME EVENTO"] != nome_evento]
-        salvar_dados(df_atual)
-        st.success("Evento excluído com sucesso!")
-        st.rerun()
-    if c2.button("Não"):
-        st.rerun()
-
-# --- TELA 1: RESUMO GERAL ---
-if pagina == "Resumo Geral":
-    st.markdown("""<style>
-        div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th { white-space: normal !important; word-wrap: break-word !important; }
-        div[data-testid="stVerticalBlock"] { gap: 0.3rem !important; }
-        div[data-testid="stHorizontalBlock"] { gap: 0.5rem !important; align-items: end !important; }
-        .stHeadingContainer, div[data-testid="stMarkdownContainer"] p { margin-bottom: 0px !important; margin-top: 0px !important; }
-        div[data-testid="stColumn"] { display: flex; flex-direction: column; justify-content: flex-end; }
-        </style>""", unsafe_allow_html=True)
-
-    st.title("📊 RELAÇÃO DE EVENTOS PROGRAMADOS PARA REALIZAÇÃO")
-    
-    if df_base.empty:
-        st.info("Nenhum evento localizado no banco de dados.")
-    else:
-        st.write("### FILTROS DA TABELA")
+        .container { display: flex; gap: 20px; max-width: 1600px; margin: auto; }
         
-        def acao_limpar_filtros_resumo():
-            st.session_state["ms_uf"] = []
-            st.session_state["ms_regiao"] = []
-            st.session_state["ms_mes"] = []
-            st.session_state["ms_origem"] = []
-            st.session_state["ms_status"] = []
-            st.session_state["ms_cidade"] = []
+        /* --- CALENDÁRIO PRINCIPAL --- */
+        .main-calendar-panel { flex: 3; background: var(--main-panel-bg); border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; min-height: 650px; }
 
-        st.button("🧹 Limpar Todos os Filtros", on_click=acao_limpar_filtros_resumo)
+        .calendar-header { padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); background: #fff; }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .dashboard-title { font-family: var(--font-title); font-size: 26px; color: #1e3a8a; }
+
+        .view-controls { display: flex; gap: 5px; border: 1px solid var(--border-color); border-radius: 6px; padding: 3px; background: #f8fafc; }
+        .view-btn { padding: 8px 20px; border: none; background: none; cursor: pointer; border-radius: 4px; font-size: 14px; font-weight: 500; color: var(--text-secondary); transition: all 0.2s ease; }
+        .view-btn.active { background: var(--active-btn-bg); color: var(--active-btn-text); font-weight: 600; }
+
+        .header-right { display: flex; align-items: center; gap: 10px; }
+        .current-period { font-size: 18px; font-weight: 600; color: #444; min-width: 150px; text-align: center; }
+        .nav-btn { background: none; border: 1px solid var(--border-color); cursor: pointer; padding: 6px 10px; border-radius: 4px; color: var(--text-secondary); }
+
+        .calendar-body { flex-grow: 1; position: relative; overflow-y: auto; }
+        .month-days-header { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--border-color); background: #f8fafc; }
+        .weekday { padding: 12px; text-align: center; font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; border-right: 1px solid var(--border-color); }
+        .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+        .day-cell { border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); padding: 8px; min-height: 100px; }
+        .day-number { font-size: 13px; font-weight: 500; color: #444; margin-bottom: 8px; display: block; }
+        .other-month { background-color: #f8fafc; color: #ccc; }
+
+        /* --- PAINEL LATERAL --- */
+        .side-panel { flex: 1; background: var(--main-panel-bg); border-radius: 12px; border: 1px solid var(--border-color); padding: 25px; max-width: 400px; }
+        .side-title { font-family: var(--font-title); font-size: 20px; color: #1e3a8a; margin-bottom: 20px; border-bottom: 2px solid var(--accent-color); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         
-        for key in ["ms_uf", "ms_regiao", "ms_mes", "ms_origem", "ms_status", "ms_cidade"]:
-            if key not in st.session_state: st.session_state[key] = []
+        .mini-year-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .mini-month { border: 1px solid #f1f5f9; padding: 8px; border-radius: 8px; }
+        .mini-month-title { font-size: 10px; font-weight: 700; text-align: center; margin-bottom: 4px; }
+        .mini-grid { display: grid; grid-template-columns: repeat(7, 1fr); font-size: 8px; text-align: center; }
+    </style>
+</head>
+<body>
 
-        # CORREÇÃO DA LÓGICA DE FILTROS:
-        # Filtramos o DataFrame base diretamente com base nas seleções do session_state
-        df_filtrado = df_base.copy()
+<div class="container">
+    <div class="main-calendar-panel">
+        <div class="calendar-header">
+            <div class="header-left">
+                <h1 class="dashboard-title">Calendário de Eventos</h1>
+                <div class="view-controls">
+                    <button class="view-btn active" data-view="month" onclick="setView('month')">Mês</button>
+                    <button class="view-btn" data-view="year" onclick="setView('year')">Ano</button>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="nav-btn" onclick="navigate(-1)"><i class="fas fa-chevron-left"></i></button>
+                <div class="current-period" id="displayPeriod">Maio 2026</div>
+                <button class="nav-btn" onclick="navigate(1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+        <div class="calendar-body" id="calendarBody"></div>
+    </div>
+
+    <div class="side-panel">
+        <div class="side-title">
+            Navegação Anual
+            <div style="display:flex; align-items:center; gap:5px;">
+                <button class="nav-btn" onclick="changeSideYear(-1)"><i class="fas fa-chevron-left"></i></button>
+                <span id="sideYearDisplay">2026</span>
+                <button class="nav-btn" onclick="changeSideYear(1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+        <div class="mini-year-grid" id="miniYearGrid"></div>
+    </div>
+</div>
+
+<script>
+    const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    let currentDate = new Date(2026, 4, 1);
+    let sideYear = 2026;
+    let currentView = 'month';
+
+    function setView(view) {
+        currentView = view;
+        document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === view));
+        render();
+    }
+
+    function navigate(dir) {
+        if (currentView === 'month') {
+            currentDate.setMonth(currentDate.getMonth() + dir);
+        } else {
+            currentDate.setFullYear(currentDate.getFullYear() + dir);
+        }
+        render();
+    }
+
+    function changeSideYear(dir) {
+        sideYear += dir;
+        document.getElementById('sideYearDisplay').innerText = sideYear;
+        renderMiniYear(sideYear);
+    }
+
+    function render() {
+        const body = document.getElementById('calendarBody');
         
-        if st.session_state["ms_uf"]: df_filtrado = df_filtrado[df_filtrado["UF"].isin(st.session_state["ms_uf"])]
-        if st.session_state["ms_regiao"]: df_filtrado = df_filtrado[df_filtrado["REGIÃO"].isin(st.session_state["ms_regiao"])]
-        if st.session_state["ms_mes"]: df_filtrado = df_filtrado[df_filtrado["Mês"].isin(st.session_state["ms_mes"])]
-        if st.session_state["ms_origem"]: df_filtrado = df_filtrado[df_filtrado["ORIGEM"].isin(st.session_state["ms_origem"])]
-        if st.session_state["ms_status"]: df_filtrado = df_filtrado[df_filtrado["STATUS"].isin(st.session_state["ms_status"])]
-        if st.session_state["ms_cidade"]: df_filtrado = df_filtrado[df_filtrado["CIDADE"].isin(st.session_state["ms_cidade"])]
-        
-        # Gerar opções dos filtros baseados no DF original, removendo nulos/sujeira
-        ufs_disponiveis = sorted([x for x in df_base["UF"].dropna().unique() if str(x).strip()])
-        regioes_disponiveis = sorted([x for x in df_base["REGIÃO"].dropna().unique() if str(x).strip()])
-        meses_disponiveis = sorted([x for x in df_base["Mês"].dropna().unique() if str(x).strip()])
-        origens_disponiveis = sorted([x for x in df_base["ORIGEM"].dropna().unique() if str(x).strip()])
-        status_disponiveis = sorted([x for x in df_base["STATUS"].dropna().unique() if str(x).strip()])
-        cidades_disponiveis = sorted([x for x in df_base["CIDADE"].dropna().unique() if str(x).strip()])
+        if (currentView === 'month') {
+            document.getElementById('displayPeriod').innerText = `${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+            let html = `<div class="month-days-header">${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(d => `<div class="weekday">${d}</div>`).join('')}</div><div class="month-grid">`;
+            const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+            const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+            for(let i=0; i<firstDay; i++) html += `<div class="day-cell other-month"></div>`;
+            for(let i=1; i<=daysInMonth; i++) html += `<div class="day-cell"><span class="day-number">${i}</span></div>`;
+            body.innerHTML = html + `</div>`;
+        } else {
+            document.getElementById('displayPeriod').innerText = `${currentDate.getFullYear()}`;
+            // Renderiza o grid de 12 meses na tela principal
+            let html = `<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:15px; padding:20px;">`;
+            months.forEach((m, i) => {
+                const daysInM = new Date(currentDate.getFullYear(), i + 1, 0).getDate();
+                html += `<div style="border:1px solid #dadce0; padding:10px; border-radius:8px; background:#fff;">
+                            <div style="font-weight:700; margin-bottom:5px; text-align:center;">${m}</div>
+                            <div style="display:grid; grid-template-columns:repeat(7, 1fr); font-size:9px; text-align:center;">
+                                ${Array.from({length:daysInM}, (_,d)=>`<div>${d+1}</div>`).join('')}
+                            </div>
+                         </div>`;
+            });
+            body.innerHTML = html + `</div>`;
+        }
+        renderMiniYear(sideYear);
+    }
 
-        c1, c2, c3, c4, c5 = st.columns(5)
-        with c1: st.multiselect("UF", ufs_disponiveis, key="ms_uf")
-        with c2: st.multiselect("REGIÃO", regioes_disponiveis, key="ms_regiao")
-        with c3: st.multiselect("Mês", meses_disponiveis, key="ms_mes")
-        with c4: st.multiselect("ORIGEM", origens_disponiveis, key="ms_origem")
-        with c5: st.multiselect("STATUS", status_disponiveis, key="ms_status")
-        st.multiselect("CIDADE", cidades_disponiveis, key="ms_cidade")
-        
-        try:
-            # Converte para float para cálculos - Removendo a formatação brasileira R$ X.XXX,XX
-            df_calculo = df_filtrado.copy()
-            df_calculo["VALOR_NUM"] = df_calculo["VALOR VERBA"].astype(str).str.replace("R$ ", "", regex=False).str.replace(".", "", regex=False).str.replace(",", ".", regex=False).astype(float)
-            soma_verba = df_calculo["VALOR_NUM"].sum()
-        except:
-            soma_verba = 0.0
+    function renderMiniYear(y) {
+        const grid = document.getElementById('miniYearGrid');
+        grid.innerHTML = '';
+        months.forEach((m, i) => {
+            let mHtml = `<div class="mini-month"><div class="mini-month-title">${m.substring(0,3)}</div><div class="mini-grid">`;
+            const daysInM = new Date(y, i + 1, 0).getDate();
+            for(let d=1; d<=daysInM; d++) mHtml += `<div>${d}</div>`;
+            grid.innerHTML += mHtml + `</div></div>`;
+        });
+    }
 
-        total_eventos_filtrados = len(df_filtrado)
-        texto_verba_br = f"R$ {soma_verba:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        
-        df_filtrado = df_filtrado.sort_values(by=["CIDADE", "NOME EVENTO", "DATA_CONVERSAO"], ascending=[True, True, True])
-        df_filtrado.insert(0, "N.º", range(1, len(df_filtrado) + 1))
-        df_exibicao = df_filtrado.drop(columns=["DATA_CONVERSAO"], errors="ignore")
-        
-        # Preparação do DF para o editor (converte R$ X.XXX,XX para float puro)
-        df_exibicao_edit = df_exibicao.copy()
-        df_exibicao_edit["VALOR VERBA"] = df_exibicao_edit["VALOR VERBA"].astype(str).str.replace("R$ ", "", regex=False).str.replace(".", "", regex=False).str.replace(",", ".", regex=False).astype(float)
-        
-        col_tt1, col_tt2, col_down_form, col_down_btn = st.columns([3, 3, 2, 2])
-        with col_tt1: st.metric(label="Subtotais do Filtro 📊 TT VERBA", value=texto_verba_br)
-        with col_tt2: st.metric(label="🔢 TT EVENTOS", value=str(total_eventos_filtrados))
-        with col_down_form: formato = st.selectbox("Exportar relatório:", ["Excel (.xlsx)", "PDF (.pdf)"], key="formato_exportacao")
-        with col_down_btn:
-            if formato == "Excel (.xlsx)":
-                st.download_button("📥 Baixar em Excel", converter_para_excel(df_exibicao), f"relatorio_{datetime.now().strftime('%d%m%Y')}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
-            else:
-                st.download_button("📄 Baixar em PDF", converter_para_pdf(df_exibicao), f"relatorio_{datetime.now().strftime('%d%m%Y')}.pdf", "application/pdf", use_container_width=True)
-        
-        st.write("### 📋 Dados Filtrados (Edite apenas as colunas: Valor, Origem, Status e Observações)")
-        
-        config_colunas = {col: st.column_config.Column(disabled=True) for col in df_exibicao_edit.columns}
-        
-        config_colunas.update({
-            "VALOR VERBA": st.column_config.NumberColumn(
-                "VALOR VERBA (R$)",
-                format="R$ %.2f", 
-                min_value=0,
-                disabled=False
-            ),
-            "OBSERVAÇÕES": st.column_config.TextColumn("OBSERVAÇÕES", disabled=False),
-            "STATUS": st.column_config.SelectboxColumn(
-                "STATUS",
-                options=["Autorizado", "Em Andamento", "Pendente", "Em Análise", "Encerrado"],
-                required=True,
-            ),
-            "ORIGEM": st.column_config.SelectboxColumn(
-                "ORIGEM",
-                options=["Emenda Direta", "Fomento", "Emenda Pós", "Privado"],
-                required=True,
-            )
-        })
-
-        df_editado = st.data_editor(
-            df_exibicao_edit, 
-            use_container_width=True, 
-            hide_index=True,
-            column_config=config_colunas
-        )
-
-        if st.button("💾 Salvar Alterações na Tabela"):
-            df_salvar = df_editado.copy()
-            df_salvar["VALOR VERBA"] = df_salvar["VALOR VERBA"].apply(lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-            df_final = df_salvar.drop(columns=["N.º"])
-            salvar_dados(df_final)
-            st.success("Alterações salvas com sucesso!")
-            st.rerun()
-
-        st.divider()
-        st.write("### 🗑️ Excluir Evento")
-        col_select, col_botao = st.columns([3, 1])
-        with col_select:
-            lista_eventos = [""] + df_exibicao["NOME EVENTO"].tolist()
-            evento_selecionado = st.selectbox("Selecione o evento para exclusão:", lista_eventos, index=None, label_visibility="collapsed")
-        with col_botao:
-            if st.button("❌ Iniciar Exclusão"):
-                if evento_selecionado:
-                    modal_excluir(evento_selecionado)
-                else:
-                    st.warning("Selecione um evento primeiro!")
-
-# --- TELA 2: CADASTRO DE EVENTO ---
-elif pagina == "Cadastro de evento":
-    st.title("📝 Cadastro de Novo Evento")
-    
-    if 'sucesso_cadastro' not in st.session_state:
-        st.session_state['sucesso_cadastro'] = False
-
-    selecao_usuario = st.selectbox("Escolha a Cidade para o Evento:", [""] + lista_cidades_ibge)
-    
-    dados_auto = mapa_localidades.get(selecao_usuario, {"CIDADE": "", "UF": "", "REGIÃO": ""})
-    cidade_auto = dados_auto["CIDADE"]
-    uf_auto = dados_auto["UF"]
-    reg_auto = dados_auto["REGIÃO"]
-
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.text_input("Cidade Selecionada:", value=cidade_auto, disabled=True)
-        st.text_input("UF:", value=uf_auto, disabled=True)
-        st.text_input("Região:", value=reg_auto, disabled=True)
-    with col2:
-        nome_evento = st.text_input("Nome do Evento:", value="").upper()
-        data_ini = st.date_input("Início (Data):", value=None, format="DD/MM/YYYY")
-        origem = st.selectbox("Origem do Recurso:", [""] + ["Emenda Direta", "Fomento", "Emenda Pós", "Privado"])
-    with col3:
-        valor_raw = st.number_input("Valor Verba (R$):", min_value=0.0, step=1000.0, format="%.2f")
-        data_fim = st.date_input("Fim (Data):", value=None, min_value=data_ini if data_ini else date.today(), format="DD/MM/YYYY")
-        status = st.selectbox("Status Atual:", [""] + ["Autorizado", "Em Andamento", "Pendente", "Em Análise", "Encerrado"])
-    
-    obs = st.text_area("Observações:", value="")
-    
-    if st.session_state['sucesso_cadastro']:
-        st.success("Evento gravado com sucesso!")
-        st.session_state['sucesso_cadastro'] = False
-
-    if st.button("Gravar Registro de Evento", type="primary"):
-        if not selecao_usuario or not nome_evento or not origem or not status or valor_raw <= 0 or not data_ini or not data_fim:
-            st.error("⚠️ Preencha todos os campos obrigatórios!")
-        else:
-            meses_pt = {'january': 'janeiro', 'february': 'fevereiro', 'march': 'março', 'april': 'abril', 'may': 'maio', 'june': 'junho', 'july': 'julho', 'august': 'agosto', 'september': 'setembro', 'october': 'outubro', 'november': 'novembro', 'december': 'dezembro'}
-            novo_evento = {
-                "CIDADE": cidade_auto, "UF": uf_auto, "REGIÃO": reg_auto, "NOME EVENTO": nome_evento,
-                "INICIO": data_ini.strftime('%d/%m/%Y'), "FIM": data_fim.strftime('%d/%m/%Y'),
-                "Mês": meses_pt.get(data_ini.strftime('%B').lower(), data_ini.strftime('%B').lower()),
-                "Dias Evento": (data_fim - data_ini).days + 1,
-                "VALOR VERBA": f"R$ {valor_raw:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
-                "ORIGEM": origem, "STATUS": status, "OBSERVAÇÕES": obs
-            }
-            df_atualizado = pd.concat([df_base.drop(columns=["DATA_CONVERSAO"], errors="ignore"), pd.DataFrame([novo_evento])], ignore_index=True)
-            salvar_dados(df_atualizado)
-            st.session_state['sucesso_cadastro'] = True
-            st.rerun()
-
-# --- TELA 3: CALENDÁRIO ---
-elif pagina == "Calendário de Eventos":
-    st.title("📅 Histórico Bruto de Cadastros")
-    if not df_base.empty: 
-        st.dataframe(df_base.drop(columns=["DATA_CONVERSAO"], errors="ignore"), use_container_width=True, hide_index=True)
-    else: st.info("Nenhum dado encontrado.")
-
-# --- TELA 4: CONFIGURAÇÕES ---
-elif pagina == "Configurações":
-    st.title("⚙️ Painel Administrativo")
-    st.toggle("Ativar Modo Escuro")
-    st.toggle("Enviar notificações por e-mail")
+    render();
+</script>
+</body>
+</html>
