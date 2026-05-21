@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel de Calendário</title>
+    <style>
+        :root { --border-color: #dadce0; --accent-color: #1a73e8; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 20px; background: #f8f9fa; }
+        
+        .container { display: flex; gap: 20px; max-width: 1400px; margin: auto; }
+        
+        /* Área Principal do Calendário */
+        .main-calendar { flex: 3; background: #fff; border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; }
+        
+        /* Cabeçalho de Navegação */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .view-btns button { padding: 8px 16px; border: 1px solid var(--border-color); background: #fff; cursor: pointer; }
+        .view-btns button.active { background: #e8f0fe; color: var(--accent-color); font-weight: bold; }
+
+        /* Grid do Calendário */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid var(--border-color); }
+        .day-header { text-align: center; padding: 10px; font-weight: bold; color: #70757a; }
+        .day-cell { height: 120px; border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); padding: 5px; position: relative; }
+        .date-num { font-size: 14px; margin-bottom: 5px; }
+        
+        /* Eventos */
+        .event { background: #cfe2f3; border-radius: 4px; padding: 2px 5px; font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; }
+
+        /* Painel Lateral (Mini Calendários) */
+        .side-panel { flex: 1; background: #fff; border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; }
+        .mini-year { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .month-mini { font-size: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="main-calendar">
+        <div class="header">
+            <div class="view-btns">
+                <button>Dia</button><button>Semana</button><button class="active">Mês</button><button>Ano</button>
+            </div>
+            <h2>Maio 2026</h2>
+        </div>
+        
+        <div class="calendar-grid">
+            <div class="day-header">Dom</div><div class="day-header">Seg</div><div class="day-header">Ter</div>
+            <div class="day-header">Qua</div><div class="day-header">Qui</div><div class="day-header">Sex</div><div class="day-header">Sáb</div>
+            
+            <div class="day-cell"><div class="date-num">10</div></div>
+            <div class="day-cell"><div class="date-num">11</div><div class="event">21:00 Estabilidade</div></div>
+            <div class="day-cell"><div class="date-num">12</div></div>
+            <div class="day-cell"><div class="date-num">13</div></div>
+            <div class="day-cell"><div class="date-num">14</div></div>
+            <div class="day-cell"><div class="date-num">15</div></div>
+            <div class="day-cell"><div class="date-num">16</div></div>
+        </div>
+    </div>
+
+    <div class="side-panel">
+        <h3>Calendário Anual</h3>
+        <div class="mini-year">
+            <div class="month-mini">Jan</div><div class="month-mini">Fev</div><div class="month-mini">Mar</div>
+            </div>
+    </div>
+</div>
+
+<script>
+    console.log("Sistema de calendário carregado com sucesso.");
+    // Aqui você adicionará a lógica para renderizar os dias dinamicamente
+</script>
+
+</body>
+</html>
