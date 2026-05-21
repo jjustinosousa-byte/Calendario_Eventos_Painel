@@ -3,113 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendário de Eventos</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>Painel de Eventos - Estética Google</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
     <style>
-        :root { --blue: #1a73e8; --border: #dadce0; --text: #3c4043; }
-        body { font-family: 'Inter', sans-serif; margin: 0; background: #f8f9fa; color: var(--text); }
-        .app-container { display: flex; flex-direction: column; padding: 20px; height: 100vh; }
-        
-        /* Header */
-        header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-        .left-controls { display: flex; align-items: center; gap: 20px; }
-        .title { font-size: 24px; font-weight: 600; color: var(--text); margin: 0; }
-        .view-group { border: 1px solid var(--border); border-radius: 4px; display: flex; }
-        .view-btn { padding: 8px 24px; border: none; background: #fff; cursor: pointer; color: var(--text); }
-        .view-btn.active { background: #e8f0fe; color: var(--blue); font-weight: 600; }
-        .nav-arrows { display: flex; align-items: center; gap: 10px; }
-        .nav-btn { background: #fff; border: 1px solid var(--border); border-radius: 4px; padding: 5px 12px; cursor: pointer; }
+        /* --- ESTILOS GERAIS --- */
+        :root {
+            --bg-color: #f1f5f9;
+            --main-panel-bg: #ffffff;
+            --border-color: #dadce0;
+            --text-primary: #1e293b;
+            --text-secondary: #70757a;
+            --accent-color: #1a73e8;
+            --active-btn-bg: #e8f0fe;
+            --active-btn-text: #174ea6;
+            --font-main: 'Inter', sans-serif;
+            --font-title: 'Poppins', sans-serif;
+        }
 
-        /* Layout Principal */
-        main { display: flex; gap: 20px; flex: 1; }
-        #main-content { flex: 1; background: #fff; border: 1px solid var(--border); min-height: 600px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: var(--bg-color); font-family: var(--font-main); color: var(--text-primary); padding: 30px; overflow-x: hidden; }
+
+        .container { display: flex; gap: 20px; max-width: 1600px; margin: auto; }
         
-        /* Sidebar */
-        aside { width: 320px; background: #fff; border: 1px solid var(--border); padding: 15px; }
-        .side-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; display: block; }
-        .mini-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .mini-month-box { font-size: 10px; text-align: center; border: 1px solid #eee; padding: 5px; }
+        /* --- CALENDÁRIO PRINCIPAL --- */
+        .main-calendar-panel {
+            flex: 3;
+            background: var(--main-panel-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 650px;
+        }
+
+        .calendar-header {
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            background: #fff;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .dashboard-title { font-family: var(--font-title); font-size: 26px; color: #1e3a8a; }
+
+        .view-controls { display: flex; gap: 5px; border: 1px solid var(--border-color); border-radius: 6px; padding: 3px; background: #f8fafc; }
+        .view-btn { padding: 8px 20px; border: none; background: none; cursor: pointer; border-radius: 4px; font-size: 14px; font-weight: 500; color: var(--text-secondary); transition: all 0.2s ease; }
+        .view-btn:hover { background: #f1f5f9; color: var(--text-primary); }
+        .view-btn.active { background: var(--active-btn-bg); color: var(--active-btn-text); font-weight: 600; }
+
+        .header-right { display: flex; align-items: center; gap: 10px; }
+        .current-period { font-size: 18px; font-weight: 600; color: #444; min-width: 150px; text-align: center; }
+        .nav-btn { background: none; border: 1px solid var(--border-color); cursor: pointer; padding: 6px 10px; border-radius: 4px; color: var(--text-secondary); }
+        .nav-btn:hover { background: #f1f5f9; }
+
+        .calendar-body { flex-grow: 1; position: relative; overflow-y: auto; }
+        .month-view { display: flex; flex-direction: column; height: 100%; }
+        .month-days-header { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--border-color); background: #f8fafc; }
+        .weekday { padding: 12px; text-align: center; font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; border-right: 1px solid var(--border-color); }
+        .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); flex-grow: 1; }
+        .day-cell { border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); padding: 8px; position: relative; min-height: 100px; }
+        .day-cell.other-month { background-color: #f8fafc; color: #ccc; }
+        .day-number { font-size: 13px; font-weight: 500; color: #444; margin-bottom: 8px; display: inline-block; }
+        .weather-icon { position: absolute; top: 8px; right: 8px; font-size: 14px; color: #f59e0b; }
+
+        /* --- PAINEL LATERAL --- */
+        .side-panel { flex: 1; background: var(--main-panel-bg); border-radius: 12px; border: 1px solid var(--border-color); padding: 25px; max-width: 400px; }
+        .side-title { font-family: var(--font-title); font-size: 20px; color: #1e3a8a; margin-bottom: 20px; border-bottom: 2px solid var(--accent-color); padding-bottom: 10px; }
+        .mini-year-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .mini-month { border: 1px solid #f1f5f9; padding: 8px; border-radius: 8px; }
+        .mini-month-title { font-size: 11px; font-weight: 700; margin-bottom: 5px; text-align: center; }
+        .mini-days-header { display: grid; grid-template-columns: repeat(7, 1fr); }
+        .mini-weekday { font-size: 8px; text-align: center; color: var(--text-secondary); }
+        .mini-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+        .mini-day { font-size: 9px; text-align: center; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <header>
-        <div class="left-controls">
-            <h1 class="title">Calendário de Eventos</h1>
-            <div class="view-group">
-                <button class="view-btn active" id="btn-mes" onclick="setView('month')">Mês</button>
-                <button class="view-btn" id="btn-ano" onclick="setView('year')">Ano</button>
-            </div>
-        </div>
-        <div class="nav-arrows">
-            <button class="nav-btn" onclick="changeDate(-1)"><i class="fas fa-chevron-left"></i></button>
-            <span id="period-display" style="font-weight: 600; width: 120px; text-align: center;">Maio 2026</span>
-            <button class="nav-btn" onclick="changeDate(1)"><i class="fas fa-chevron-right"></i></button>
-        </div>
-    </header>
-    
-    <main>
-        <div id="main-content"></div>
-        <aside>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span class="side-title">Navegação Anual</span>
-                <div class="nav-arrows">
-                    <button class="nav-btn" onclick="changeSideYear(-1)"><i class="fas fa-chevron-left"></i></button>
-                    <span id="side-year-display" style="font-weight:600">2026</span>
-                    <button class="nav-btn" onclick="changeSideYear(1)"><i class="fas fa-chevron-right"></i></button>
+<div class="container">
+    <div class="main-calendar-panel">
+        <div class="calendar-header">
+            <div class="header-left">
+                <h1 class="dashboard-title">Calendário de Eventos</h1>
+                <div class="view-controls">
+                    <button class="view-btn" data-view="day">Dia</button>
+                    <button class="view-btn" data-view="week">Semana</button>
+                    <button class="view-btn active" data-view="month">Mês</button>
+                    <button class="view-btn" data-view="year">Ano</button>
                 </div>
             </div>
-            <div id="side-calendar" class="mini-grid" style="margin-top:15px;"></div>
-        </aside>
-    </main>
+            <div class="header-right">
+                <button class="nav-btn" id="prevPeriod"><i class="fas fa-chevron-left"></i></button>
+                <div class="current-period" id="displayPeriod">Maio 2026</div>
+                <button class="nav-btn" id="nextPeriod"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+        <div class="calendar-body" id="calendarBody"></div>
+    </div>
+
+    <div class="side-panel">
+        <h2 class="side-title">Navegação Anual</h2>
+        <div class="mini-year-grid" id="miniYearGrid"></div>
+    </div>
 </div>
 
 <script>
+    const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    const weekdaysShort = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    const miniWeekdays = ["D", "S", "T", "Q", "Q", "S", "S"];
+    let currentDate = new Date(2026, 4, 1);
     let currentView = 'month';
-    let date = new Date(2026, 4, 1);
-    let sideYear = 2026;
-    const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-    function setView(v) {
-        currentView = v;
-        document.getElementById('btn-mes').className = v === 'month' ? 'view-btn active' : 'view-btn';
-        document.getElementById('btn-ano').className = v === 'year' ? 'view-btn active' : 'view-btn';
-        render();
+    function init() {
+        renderMiniYear(2026);
+        renderCalendar();
+        setupEvents();
     }
 
-    function changeDate(dir) {
-        if(currentView === 'month') date.setMonth(date.getMonth() + dir);
-        else date.setFullYear(date.getFullYear() + dir);
-        render();
+    function setupEvents() {
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                currentView = e.target.getAttribute('data-view');
+                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                renderCalendar();
+            });
+        });
+        document.getElementById('prevPeriod').addEventListener('click', () => navigate(-1));
+        document.getElementById('nextPeriod').addEventListener('click', () => navigate(1));
     }
 
-    function changeSideYear(dir) {
-        sideYear += dir;
-        document.getElementById('side-year-display').innerText = sideYear;
-        renderSidebar();
+    function navigate(dir) {
+        currentDate.setMonth(currentDate.getMonth() + dir);
+        renderCalendar();
     }
 
-    function render() {
-        const display = document.getElementById('period-display');
-        display.innerText = currentView === 'month' ? 
-            `${date.toLocaleDateString('pt-BR', {month:'long'})} ${date.getFullYear()}` : date.getFullYear();
+    function renderCalendar() {
+        document.getElementById('displayPeriod').innerText = `${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+        if (currentView !== 'month') {
+            document.getElementById('calendarBody').innerHTML = `<div style="padding:40px; text-align:center;">Visualização de ${currentView} (Em construção)</div>`;
+            return;
+        }
         
-        // Renderização do conteúdo principal (mantido conforme estrutura anterior)
-        document.getElementById('main-content').innerHTML = `
-            <div style="padding:20px; text-align:center; color:#666;">
-                <h3>${currentView === 'month' ? 'Visualização de Mês' : 'Visualização de Ano'}</h3>
-            </div>`;
-        renderSidebar();
+        let html = `<div class="month-view"><div class="month-days-header">${weekdaysShort.map(d => `<div class="weekday">${d}</div>`).join('')}</div><div class="month-grid">`;
+        const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+        const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+        
+        for (let i = 0; i < firstDay; i++) html += `<div class="day-cell other-month"></div>`;
+        for (let i = 1; i <= daysInMonth; i++) {
+            html += `<div class="day-cell"><span class="day-number">${i}</span></div>`;
+        }
+        calendarBody.innerHTML = html + `</div></div>`;
     }
 
-    function renderSidebar() {
-        const side = document.getElementById('side-calendar');
-        side.innerHTML = months.map(m => `<div class="mini-month-box"><strong>${m}</strong></div>`).join('');
+    function renderMiniYear(y) {
+        const grid = document.getElementById('miniYearGrid');
+        months.forEach((m, idx) => {
+            let mHtml = `<div class="mini-month"><div class="mini-month-title">${m.substring(0,3)}</div><div class="mini-days-header">${miniWeekdays.map(d => `<div class="mini-weekday">${d}</div>`).join('')}</div><div class="mini-grid">`;
+            const daysInM = new Date(y, idx + 1, 0).getDate();
+            for(let d=1; d<=daysInM; d++) mHtml += `<div class="mini-day">${d}</div>`;
+            grid.innerHTML += mHtml + `</div></div>`;
+        });
     }
 
-    render();
+    init();
 </script>
 </body>
 </html>
