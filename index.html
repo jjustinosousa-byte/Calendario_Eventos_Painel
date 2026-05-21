@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <style>
-        /* --- ESTILOS GERAIS (Mantidos do Original) --- */
+        /* --- ESTILOS GERAIS (Mantidos 100% Intactos) --- */
         :root {
             --bg-color: #f1f5f9;
             --main-panel-bg: #ffffff;
@@ -36,7 +36,7 @@
         .header-left { display: flex; align-items: center; gap: 15px; }
         .dashboard-title { font-family: var(--font-title); font-size: 26px; color: #1e3a8a; }
 
-        /* Botões Modificados: Apenas Mês e Ano */
+        /* Botões */
         .view-controls { display: flex; gap: 5px; border: 1px solid var(--border-color); border-radius: 6px; padding: 3px; background: #f8fafc; }
         .view-btn { padding: 8px 20px; border: none; background: none; cursor: pointer; border-radius: 4px; font-size: 14px; font-weight: 500; color: var(--text-secondary); transition: all 0.2s ease; }
         .view-btn.active { background: var(--active-btn-bg); color: var(--active-btn-text); font-weight: 600; }
@@ -110,7 +110,11 @@
     }
 
     function navigate(dir) {
-        currentDate.setMonth(currentDate.getMonth() + dir);
+        if (currentView === 'month') {
+            currentDate.setMonth(currentDate.getMonth() + dir);
+        } else {
+            currentDate.setFullYear(currentDate.getFullYear() + dir);
+        }
         render();
     }
 
@@ -121,10 +125,10 @@
     }
 
     function render() {
-        document.getElementById('displayPeriod').innerText = `${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
         const body = document.getElementById('calendarBody');
         
         if (currentView === 'month') {
+            document.getElementById('displayPeriod').innerText = `${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
             let html = `<div class="month-days-header">${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(d => `<div class="weekday">${d}</div>`).join('')}</div><div class="month-grid">`;
             const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
             const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
@@ -132,7 +136,13 @@
             for(let i=1; i<=daysInMonth; i++) html += `<div class="day-cell"><span class="day-number">${i}</span></div>`;
             body.innerHTML = html + `</div>`;
         } else {
-            body.innerHTML = `<div style="padding:50px; text-align:center;">Visualização de Ano (Estrutura mantida)</div>`;
+            document.getElementById('displayPeriod').innerText = `${currentDate.getFullYear()}`;
+            // Renderiza o grid de 12 meses na tela principal
+            let html = `<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; padding:20px;">`;
+            months.forEach((m, i) => {
+                html += `<div style="border:1px solid #eee; padding:10px; border-radius:8px;"><strong>${m}</strong><div style="font-size:10px; display:grid; grid-template-columns:repeat(7, 1fr); margin-top:5px;">${Array.from({length:28}, (_,d)=>`<div>${d+1}</div>`).join('')}</div></div>`;
+            });
+            body.innerHTML = html + `</div>`;
         }
         renderMiniYear(sideYear);
     }
