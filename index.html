@@ -3,61 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendário Profissional Estilo Google</title>
+    <title>Calendário de Eventos</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        :root { --blue: #1a73e8; --border: #dadce0; --text: #3c4043; }
-        body { font-family: 'Inter', sans-serif; margin: 0; background: #f8f9fa; color: var(--text); }
-        .app-container { display: flex; height: 100vh; flex-direction: column; }
-        header { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; background: #fff; border-bottom: 1px solid var(--border); }
-        .controls { display: flex; gap: 10px; align-items: center; }
-        .view-btn { padding: 8px 16px; border: 1px solid var(--border); background: #fff; border-radius: 4px; cursor: pointer; }
+        :root { --blue: #1a73e8; --border: #dadce0; --text: #3c4043; --bg: #f8f9fa; }
+        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg); color: var(--text); }
+        .app-container { display: flex; height: 100vh; flex-direction: column; padding: 20px; }
+        header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 20px; }
+        .view-btn { padding: 8px 24px; border: 1px solid var(--border); background: #fff; cursor: pointer; }
         .view-btn.active { background: #e8f0fe; color: var(--blue); border-color: var(--blue); font-weight: 600; }
-        .nav-arrows { display: flex; align-items: center; gap: 15px; margin-left: 20px; }
+        .nav-arrows { display: flex; align-items: center; gap: 15px; }
         .nav-btn { background: none; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; padding: 5px 10px; }
-        main { display: flex; flex: 1; overflow: hidden; }
-        #main-content { flex: 1; overflow-y: auto; background: #fff; }
-        aside { width: 320px; border-left: 1px solid var(--border); background: #fff; padding: 20px; overflow-y: auto; }
+        main { display: flex; gap: 20px; flex: 1; }
+        #main-content { flex: 1; background: #fff; border: 1px solid var(--border); }
+        aside { width: 320px; background: #fff; border: 1px solid var(--border); padding: 20px; }
         
-        /* Grids */
+        /* Grid Mensal */
         .grid-month { display: grid; grid-template-columns: repeat(7, 1fr); height: 100%; }
-        .header-day { padding: 10px; font-size: 11px; font-weight: 600; text-align: center; border-bottom: 1px solid var(--border); color: #70757a; }
+        .header-day { padding: 10px; text-align: center; font-size: 11px; font-weight: 600; border-bottom: 1px solid var(--border); }
         .cell { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); min-height: 100px; padding: 5px; }
-        .day-num { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 12px; border-radius: 50%; }
-        .day-num.today { background: var(--blue); color: #fff; }
-
-        /* Year View */
+        
+        /* Grid Anual Principal */
         .year-grid-main { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; padding: 20px; }
-        .mini-month { border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
-        .mini-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; font-size: 10px; text-align: center; }
+        .mini-month { border: 1px solid var(--border); padding: 8px; border-radius: 4px; }
+        .mini-grid { display: grid; grid-template-columns: repeat(7, 1fr); font-size: 9px; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
     <header>
-        <div class="controls">
-            <h2 style="margin:0; font-size: 22px; color: #1e3a8a;">Painel de Eventos</h2>
-            <div style="margin-left:30px">
-                <button class="view-btn" onclick="setView('day')">Dia</button>
-                <button class="view-btn" onclick="setView('week')">Semana</button>
-                <button class="view-btn active" onclick="setView('month')">Mês</button>
-                <button class="view-btn" onclick="setView('year')">Ano</button>
-            </div>
+        <div>
+            <button class="view-btn active" id="btn-mes" onclick="setView('month')">Mês</button>
+            <button class="view-btn" id="btn-ano" onclick="setView('year')">Ano</button>
         </div>
         <div class="nav-arrows">
             <button class="nav-btn" onclick="changeDate(-1)"><i class="fas fa-chevron-left"></i></button>
-            <span id="period-display" style="font-weight: 600; font-size: 18px; min-width: 150px; text-align: center;">Maio 2026</span>
+            <span id="period-display" style="font-weight: 600; font-size: 18px; width: 150px; text-align: center;">Maio 2026</span>
             <button class="nav-btn" onclick="changeDate(1)"><i class="fas fa-chevron-right"></i></button>
         </div>
     </header>
     
     <main>
         <div id="main-content"></div>
-        <aside id="sidebar">
-            <h3 style="font-size: 14px; color: var(--blue);">Navegação Anual</h3>
-            <div id="mini-calendar-container"></div>
+        <aside>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="font-size: 16px; margin:0;">Navegação Anual</h3>
+                <div class="nav-arrows">
+                    <button class="nav-btn" onclick="changeSideYear(-1)"><i class="fas fa-chevron-left"></i></button>
+                    <span id="side-year-display" style="font-weight:600">2026</span>
+                    <button class="nav-btn" onclick="changeSideYear(1)"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+            <div id="side-calendar"></div>
         </aside>
     </main>
 </div>
@@ -65,31 +64,27 @@
 <script>
     let currentView = 'month';
     let date = new Date(2026, 4, 1);
+    let sideYear = 2026;
     const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-    const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    const days = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 
     function setView(v) {
         currentView = v;
-        document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-        event.target.classList.add('active');
+        document.getElementById('btn-mes').className = v === 'month' ? 'view-btn active' : 'view-btn';
+        document.getElementById('btn-ano').className = v === 'year' ? 'view-btn active' : 'view-btn';
         render();
     }
 
     function changeDate(dir) {
-        if(currentView === 'day') date.setDate(date.getDate() + dir);
-        else if(currentView === 'week') date.setDate(date.getDate() + (dir * 7));
-        else if(currentView === 'month') date.setMonth(date.setMonth() + dir); // Simplificado
-        else if(currentView === 'year') date.setFullYear(date.getFullYear() + dir);
+        if(currentView === 'month') date.setMonth(date.getMonth() + dir);
+        else date.setFullYear(date.getFullYear() + dir);
         render();
     }
 
-    // Função de correção para navegação de mês
-    function changeDate(dir) {
-        if(currentView === 'day') date.setDate(date.getDate() + dir);
-        else if(currentView === 'week') date.setDate(date.getDate() + (dir * 7));
-        else if(currentView === 'month') date.setMonth(date.getMonth() + dir);
-        else if(currentView === 'year') date.setFullYear(date.getFullYear() + dir);
-        render();
+    function changeSideYear(dir) {
+        sideYear += dir;
+        document.getElementById('side-year-display').innerText = sideYear;
+        renderSidebar();
     }
 
     function render() {
@@ -103,11 +98,10 @@
             days.forEach(d => html += `<div class="header-day">${d}</div>`);
             let first = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
             let count = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-            for(let i=0; i<first; i++) html += '<div class="cell" style="background:#f8f9fa"></div>';
-            for(let i=1; i<=count; i++) html += `<div class="cell"><div class="day-num">${i}</div></div>`;
+            for(let i=0; i<first; i++) html += '<div class="cell" style="background:#fcfcfc"></div>';
+            for(let i=1; i<=count; i++) html += `<div class="cell">${i}</div>`;
             main.innerHTML = html + '</div>';
-        } 
-        else if(currentView === 'year') {
+        } else {
             display.innerText = date.getFullYear();
             let html = '<div class="year-grid-main">';
             for(let m=0; m<12; m++) {
@@ -117,33 +111,17 @@
             }
             main.innerHTML = html + '</div>';
         }
-        else if(currentView === 'day') {
-            display.innerText = date.toLocaleDateString('pt-BR', {day:'numeric', month:'long'});
-            let html = '<div style="padding:20px"><h3>'+days[date.getDay()]+'</h3><hr>';
-            for(let i=0; i<24; i++) html += `<div style="height:40px; border-bottom:1px solid #eee; color:#999; font-size:12px">${i}:00</div>`;
-            main.innerHTML = html + '</div>';
-        }
-        else if(currentView === 'week') {
-            display.innerText = "Semana " + date.getFullYear();
-            let html = '<div style="display:grid; grid-template-columns:repeat(7, 1fr); height:100%">';
-            for(let i=0; i<7; i++) html += `<div style="border-right:1px solid #eee; text-align:center; padding:10px"><strong>${days[i]}</strong></div>`;
-            main.innerHTML = html + '</div>';
-        }
-
         renderSidebar();
     }
 
     function renderSidebar() {
-        const side = document.getElementById('mini-calendar-container');
-        side.innerHTML = `<div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:10px">`;
-        for(let m=0; m<12; m++) {
-            side.innerHTML += `<div style="font-size:10px; text-align:center"><strong>${months[m].substring(0,3)}</strong></div>`;
-        }
+        const side = document.getElementById('side-calendar');
+        side.innerHTML = `<div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;">` + 
+            months.map(m => `<div style="font-size:10px; text-align:center; border:1px solid #eee; padding:5px;"><strong>${m.substring(0,3)}</strong></div>`).join('') + 
+            `</div>`;
     }
 
     render();
 </script>
 </body>
 </html>
-
-Agora você tem o controle total. Ao navegar no calendário, tanto o topo quanto a lateral e o centro da tela se mantêm em perfeita harmonia! Sua apresentação está pronta. Feel free to take a look and let me know if you'd like to make any edits.
